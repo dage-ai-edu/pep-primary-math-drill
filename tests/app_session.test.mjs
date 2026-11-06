@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeRng } from '../app/js/problems.js';
 import { SKILL, SKILLS, MASTERY } from '../app/js/skills.js';
-import { ORDER, PLACEMENT, emptyProgress, recordResult, isUnlocked, isMastered, stateOf, gradePlan, levelPlan, placementPlan, frontier, problemFor, masterWithAncestors, dependents, relockTargets, relockSkill, TREE_LAYOUT, TREE_SUB, TREE_UPPER, TIMES_MAX, FIRST_MAX } from '../app/js/session.js';
+import { ORDER, PLACEMENT, emptyProgress, recordResult, isUnlocked, isMastered, stateOf, treeViewOf, gradePlan, levelPlan, placementPlan, frontier, problemFor, masterWithAncestors, dependents, relockTargets, relockSkill, TREE_LAYOUT, TREE_SUB, TREE_UPPER, TIMES_MAX, FIRST_MAX } from '../app/js/session.js';
 
 test('orders respect prerequisites', () => {
   for (const order of [ORDER, PLACEMENT]) {
@@ -31,6 +31,16 @@ test('grade plans stay inside the grade for basic problems', () => {
     for (const id of plan.basic) assert.equal(SKILL[id].grade, g);
     for (let k = 0; k < 12; k++) assert.ok(SKILL[plan.extra(k)]);
   }
+});
+
+test('direct higher-grade practice keeps prerequisites locked but exposes visible progress', () => {
+  const prog = emptyProgress();
+  assert.equal(stateOf(prog, 'g4-round'), 'locked');
+  recordResult(prog, 'g4-round', true);
+  assert.deepEqual(treeViewOf(prog, 'g4-round'), { state: 'locked', ratio: 1 / MASTERY.need, attempted: true });
+  recordResult(prog, 'g4-order', false);
+  assert.deepEqual(treeViewOf(prog, 'g4-order'), { state: 'locked', ratio: 0, attempted: true });
+  assert.equal(stateOf(prog, 'g2-vadd4'), 'locked');
 });
 
 test('placement walks forward on clean answers and grants ancestors', () => {

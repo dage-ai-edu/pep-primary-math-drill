@@ -225,6 +225,16 @@ export function masteryRatio(prog, id) {
   return Math.min(0.95, ok / MASTERY.need);
 }
 
+// A grade practice may record work on a skill whose prerequisite path has not
+// been mastered yet. Keep the node locked, but expose that saved progress so
+// the tree can show the child that this session counted.
+export function treeViewOf(prog, id) {
+  const state = stateOf(prog, id);
+  const ratio = masteryRatio(prog, id);
+  const attempted = state === 'locked' && (prog.skills[id]?.n || 0) > 0;
+  return { state, ratio, attempted };
+}
+
 // ---------------------------------------------------------------- planners
 // A plan answers: which skill for basic problem i, and for extra problem k.
 // "adaptive" plans also react to answers (placement walk).

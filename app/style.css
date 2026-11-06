@@ -309,6 +309,8 @@ body.lv8 .pad button { box-shadow: 0 5px 0 var(--ink), 0 0 calc(var(--kick) * 18
 }
 .score { margin: 8px 0 0; font-family: var(--chunky); line-height: 1; }
 .score b { font-weight: 400; font-size: 92px; color: var(--pink); text-shadow: 3px 0 0 var(--ink), -3px 0 0 var(--ink), 0 3px 0 var(--ink), 0 -3px 0 var(--ink), 0 8px 0 var(--ink); }
+.score-kicker { margin: 2px 0 -8px; font-size: 13px; font-weight: 900; opacity: .68; letter-spacing: .08em; }
+.score-note { margin: -6px 0 4px; padding: 6px 10px; border-radius: 10px; background: #fff4c4; font-size: 12px; font-weight: 900; line-height: 1.45; text-align: center; }
 .score span { font-size: 28px; margin-left: 4px; font-family: var(--round); font-weight: 900; }
 .stats dd small { font-family: var(--round); font-weight: 900; font-size: 14px; margin-left: 2px; }
 .breakdown { margin: 8px 0 0; font-size: 15px; }
@@ -418,6 +420,7 @@ body.reduced .logo span, body.reduced .spot, body.reduced .marquee, body.reduced
 .node .g { font-size: 9px; opacity: .6; }
 .node .ring { position: absolute; left: 4px; right: 4px; bottom: 3px; height: 4px; border-radius: 3px; background: linear-gradient(90deg, var(--pink) calc(var(--p) * 100%), #eee calc(var(--p) * 100%)); }
 .node.locked { background: #eceaf3; color: #8a8cb0; border-color: #a9abc9; box-shadow: 0 3px 0 #a9abc9; }
+.node.locked.attempted { background: #e3ebff; color: var(--ink); border-color: #7d83b2; box-shadow: 0 3px 0 #7d83b2, 0 0 0 3px rgba(59, 107, 255, .12); }
 .node.locked::before { content: ""; position: absolute; top: -8px; right: -6px; width: 16px; height: 13px; border-radius: 3px; background: #a9abc9; box-shadow: inset 0 0 0 2px #8a8cb0; }
 .node.locked::after { content: ""; position: absolute; top: -15px; right: -2px; width: 8px; height: 9px; border: 2.5px solid #8a8cb0; border-bottom: 0; border-radius: 6px 6px 0 0; }
 .node.new { background: #fff4c4; animation: node-new 1.1s ease-in-out infinite; }
@@ -450,6 +453,8 @@ body.reduced .node { animation: none !important; }
 .skill-news:empty { display: none; }
 .skill-news p { margin: 0; padding: 6px 10px; border: 2.5px solid var(--ink); border-radius: 12px; background: #fff4c4; font-size: 13px; font-weight: 900; text-align: center; }
 .skill-news p.mastered { background: linear-gradient(160deg, #fff6c8, #ffd23f); }
+.skill-news p.progress-news { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; background: #e3ebff; }
+.skill-news p.progress-news b { color: var(--blue); }
 
 /* ------------------------------------------------------------ demo play */
 .demo-btn { align-self: center; min-width: 230px; font-weight: 900; background: #e3ebff; }

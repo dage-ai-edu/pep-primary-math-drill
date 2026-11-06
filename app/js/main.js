@@ -10,7 +10,7 @@ import { Backdrop } from './bg.js';
 import * as store from './store.js';
 import { createGuide } from './guide.js';
 import { SKILLS, SKILL, LANES, DEPTH } from './skills.js';
-import { ORDER, emptyProgress, recordResult, stateOf, masteryRatio, starsOf, nextStar, STAR_MAX, pickCapsule, useCapsule, rustyOf, gradePlan, levelPlan, reviewPlan, problemFor, frontier, isUnlocked, relockTargets, relockSkill, TREE_LAYOUT } from './session.js';
+import { ORDER, emptyProgress, recordResult, stateOf, treeViewOf, starsOf, nextStar, STAR_MAX, pickCapsule, useCapsule, rustyOf, gradePlan, levelPlan, reviewPlan, problemFor, frontier, isUnlocked, relockTargets, relockSkill, TREE_LAYOUT } from './session.js';
 import * as growth from './growth.js';
 import * as qs from './quests.js';
 import * as tr from './trophies.js';
@@ -1142,7 +1142,7 @@ function showResult() {
   const ok = rate >= 0.8 && !review;
   if (S.plan.placement && !S.demo) { progress().placed = true; store.save(); }
   S.record = S.demo ? null : store.addRecord({ mode: S.plan.mode, grade: S.plan.grade, skill: S.plan.skill, count: S.N, score: BASIC_SCORE, ok: S.solved, ng: S.misses, firstRate: rate, timeMs: Math.round(t), dopaL: S.dopa.L });
-  if (recording()) { growth.notePlay(stats(), { mode: S.plan.mode, day: store.dayKey(), timeMs: Math.round(t), dopaL: S.dopa.L, firstRate: rate }); store.save(); }
+  if (recording()) { growth.notePlay(stats(), { mode: S.plan.mode, grade: S.plan.grade, day: store.dayKey(), timeMs: Math.round(t), dopaL: S.dopa.L, firstRate: rate }); store.save(); }
   questNote({ type: 'play', mode: S.plan.mode });
   $('#result-title').textContent = review ? '复习过关' : `${modeName(S.plan)} 过关`;
   const un = $('#r-unlock');
@@ -1150,12 +1150,13 @@ function showResult() {
   un.classList.toggle('yes', ok);
   $('#go-extra').hidden = !ok;
   $('#go-extra small').textContent = `${Math.round(EXTRA_MS / 1000)}秒`;
-  $('#go-again').hidden = ok;
+  $('#go-again').hidden = ok || (review && !progress().review.length);
+  $('#r-score-note').textContent = review ? '复习完成，学习记录已更新' : '完成基础题获得 100 分；首次答对率决定是否进入挑战关';
   renderSkillNews($('#r-skills'));
   renderGrowth($('#r-growth'));
   renderQuestMini($('#r-quests'));
   if (checkTrophies().length) { const run = S.run; setTimeout(() => { if (run === S.run && S.screen === 'result') openTrophies(); }, 2300); }
-  $('#go-tree').hidden = !(S.newUnlocks.length || S.newMastered.length || Object.keys(S.newStars).length || S.plan.placement);
+  $('#go-tree').hidden = !hasSessionProgress();
   setReviewButton($('#go-review'), ok ? 0 : S.wrongList.length);
   audio.play('musicGain', audio.now(), { v: 0.55, ramp: 0.6 });
   showScreen('result');
@@ -1216,7 +1217,7 @@ function showFinal() {
   renderSkillNews($('#f-skills'));
   renderQuestMini($('#f-quests'));
   if (checkTrophies().length) { const run = S.run; setTimeout(() => { if (run === S.run && S.screen === 'final') openTrophies(); }, 2600); }
-  $('#f-tree').hidden = !(S.newUnlocks.length || S.newMastered.length || Object.keys(S.newStars).length || S.plan.placement);
+  $('#f-tree').hidden = !hasSessionProgress();
   setReviewButton($('#f-review'), S.wrongList.length);
   audio.play('musicGain', audio.now(), { v: 0.55, ramp: 0.6 });
   showScreen('final');
@@ -1394,7 +1395,9 @@ function starRow(n, max = STAR_MAX) {
   return `<svg class="star-row" viewBox="0 0 ${max * 20} 20" aria-hidden="true">${Array.from({ length: max }, (_, i) => `<path transform="translate(${10 + i * 20} 10.5)" d="${STAR_PATH}" class="${i < n ? 'on' : ''}"/>`).join('')}</svg>`;
 }
 function renderSkillNews(el) {
+  const touched = sessionSkillIds();
   const items = [
+    ...(touched.length ? [`<p class="progress-news"><b>技能进度已更新</b><span>本轮记录了 ${touched.length} 个技能</span></p>`] : []),
     ...(S.capsuleNews ? [`<p class="capsule-news"><b>时光胶囊</b>${S.capsuleNews}</p>`] : []),
     ...(S.polished || []).map((id) => `<p class="polish-news">闪亮亮！ ${SKILL[id].name}</p>`),
     ...Object.entries(S.newStars || {}).map(([id, n]) => `<p class="star-up">${starRow(n)}<span>☆ 升到 ${n}！ ${SKILL[id].name}</span></p>`),
@@ -1404,6 +1407,8 @@ function renderSkillNews(el) {
   if (S.plan.placement) items.unshift(`<p>水平测试结束　完成 ${SKILLS.filter((x) => stateOf(progress(), x.id) === 'mastered').length} 个题目</p>`);
   el.innerHTML = items.slice(0, 5).join('');
 }
+const sessionSkillIds = () => Object.keys(S.sessionTimes || {}).filter((id) => SKILL[id]);
+const hasSessionProgress = () => sessionSkillIds().length > 0 || S.newUnlocks.length > 0 || S.newMastered.length > 0 || Object.keys(S.newStars).length > 0 || S.plan.placement;
 function setReviewButton(btn, n) {
   btn.hidden = !n;
   btn.textContent = `重做答错的 ${n} 题`;
@@ -1658,16 +1663,18 @@ function renderTree(justIds = [], starIds = []) {
   }
   $('#tree-links').innerHTML = links;
   for (const sk of SKILLS) {
-    const st = stateOf(prog, sk.id);
+    const view = treeViewOf(prog, sk.id);
+    const st = view.state;
     const b = document.createElement('button');
     b.type = 'button';
     const stars = starsOf(prog, sk.id);
     const rusty = rustSet.has(sk.id);
-    b.className = `node ${st}${justIds.includes(sk.id) ? ' just' : ''}${starIds.includes(sk.id) ? ' star-up' : ''}${rusty ? ' rusty' : ''}`;
+    b.className = `node ${st}${view.attempted ? ' attempted' : ''}${justIds.includes(sk.id) ? ' just' : ''}${starIds.includes(sk.id) ? ' star-up' : ''}${rusty ? ' rusty' : ''}`;
     b.dataset.id = sk.id;
-    b.style.cssText = `left:${pos[sk.id].x}px;top:${pos[sk.id].y}px;width:${nodeW}px;height:${NODE_H}px;--p:${masteryRatio(prog, sk.id)}`;
-    b.innerHTML = `<i class="hold"></i><span class="g">${sk.grade}年级</span><span>${sk.name}</span>${st === 'learning' ? '<i class="ring"></i>' : ''}${st === 'mastered' ? `<i class="stars s${stars}">${starRow(stars)}</i>` : ''}${rusty ? '<i class="rust" aria-hidden="true">锈</i>' : ''}`;
-    b.setAttribute('aria-label', `${sk.name} ${{ locked: '还没', new: '新', learning: '练习中', mastered: `精通 ${stars} 颗星${rusty ? '（已生锈）' : ''}` }[st]}`);
+    b.style.cssText = `left:${pos[sk.id].x}px;top:${pos[sk.id].y}px;width:${nodeW}px;height:${NODE_H}px;--p:${view.ratio}`;
+    b.innerHTML = `<i class="hold"></i><span class="g">${sk.grade}年级</span><span>${sk.name}</span>${st === 'learning' || view.attempted ? '<i class="ring"></i>' : ''}${st === 'mastered' ? `<i class="stars s${stars}">${starRow(stars)}</i>` : ''}${rusty ? '<i class="rust" aria-hidden="true">锈</i>' : ''}`;
+    const pct = Math.round(view.ratio * 100);
+    b.setAttribute('aria-label', `${sk.name} ${view.attempted ? `已练习，进度 ${pct}%，前置技能尚未完成` : { locked: '还没', new: '新', learning: `练习中，进度 ${pct}%`, mastered: `精通 ${stars} 颗星${rusty ? '（已生锈）' : ''}` }[st]}`);
     tree.appendChild(b);
   }
   $('#tree-count').textContent = `${SKILLS.filter((x) => stateOf(prog, x.id) === 'mastered').length} / ${SKILLS.length}`;
@@ -1680,14 +1687,14 @@ function renderTree(justIds = [], starIds = []) {
   });
 }
 
-function openTree(justIds = [], starIds = []) {
+function openTree(justIds = [], starIds = [], focusIds = []) {
   audio.unlock();
   audio.play('blip', audio.now(), { m: 79, v: 0.1 });
   showScreen('tree');
   requestAnimationFrame(() => {
     renderTree(justIds, starIds);
     const prog = progress();
-    const focus = justIds[0] || starIds[0] || frontier(prog)[0];
+    const focus = justIds[0] || starIds[0] || focusIds[0] || frontier(prog)[0];
     const el = focus && $(`.node[data-id="${focus}"]`);
     const sc = $('#tree-scroll');
     if (el) { sc.scrollTop = Math.max(0, el.offsetTop - 140); sc.scrollLeft = Math.max(0, el.offsetLeft + el.offsetWidth / 2 - sc.clientWidth / 2); }
@@ -2523,8 +2530,8 @@ $('#tree').addEventListener('click', (e) => {
   if (st === 'mastered') { openSkillInfo(id); return; }
   startGame('practice', id);
 });
-$('#go-tree').addEventListener('click', () => openTree(S.newUnlocks, Object.keys(S.newStars)));
-$('#f-tree').addEventListener('click', () => openTree(S.newUnlocks, Object.keys(S.newStars)));
+$('#go-tree').addEventListener('click', () => openTree(S.newUnlocks, Object.keys(S.newStars), sessionSkillIds()));
+$('#f-tree').addEventListener('click', () => openTree(S.newUnlocks, Object.keys(S.newStars), sessionSkillIds()));
 $('#tree-back').addEventListener('click', () => { audio.play('blip', audio.now(), { m: 72, v: 0.08 }); toTitle(); });
 
 for (const [key, b] of Object.entries(padButtons)) {

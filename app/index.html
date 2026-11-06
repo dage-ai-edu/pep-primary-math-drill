@@ -144,7 +144,9 @@
     <section id="screen-result" class="screen" aria-labelledby="result-title">
       <div class="result-card">
         <p class="chip" id="result-title">基本过关</p>
+        <p class="score-kicker">本轮得分</p>
         <p class="score"><b id="r-score">100</b><span>分</span></p>
+        <p class="score-note" id="r-score-note">完成基础题获得 100 分</p>
         <dl class="stats">
           <div><dt>答对</dt><dd id="r-ok">10 题</dd></div>
           <div><dt>错误</dt><dd id="r-ng">0 次</dd></div>
@@ -159,9 +161,9 @@
         <div class="actions">
           <button type="button" id="go-extra" class="big-btn">前往挑战关 <small>90秒</small></button>
           <button type="button" id="go-review" class="sub-btn review-btn" hidden>重做答错的题目</button>
-          <button type="button" id="go-tree" class="sub-btn" hidden>查看技能树</button>
-          <button type="button" id="go-again" class="sub-btn" hidden>再一次</button>
-          <button type="button" id="go-title" class="sub-btn">结束</button>
+          <button type="button" id="go-tree" class="sub-btn" hidden>查看本次技能进度</button>
+          <button type="button" id="go-again" class="sub-btn" hidden>再练一组</button>
+          <button type="button" id="go-title" class="sub-btn">返回首页</button>
         </div>
       </div>
     </section>
@@ -170,6 +172,7 @@
     <section id="screen-final" class="screen" aria-labelledby="final-title">
       <div class="result-card">
         <p class="chip" id="final-title">挑战关结束</p>
+        <p class="score-kicker">本轮总得分</p>
         <p class="score"><b id="f-score">100</b><span>分</span></p>
         <p class="breakdown" id="f-break">基本 100 ＋ 挑战关 0</p>
         <dl class="stats">
@@ -183,8 +186,8 @@
         <div class="quest-mini" id="f-quests"></div>
         <div class="actions">
           <button type="button" id="f-review" class="sub-btn review-btn" hidden>重做答错的题目</button>
-          <button type="button" id="f-tree" class="sub-btn" hidden>查看技能树</button>
-          <button type="button" id="again" class="big-btn">结束</button>
+          <button type="button" id="f-tree" class="sub-btn" hidden>查看本次技能进度</button>
+          <button type="button" id="again" class="big-btn">返回首页</button>
         </div>
       </div>
     </section>
