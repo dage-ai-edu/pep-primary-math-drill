@@ -18,3 +18,11 @@ test('every grade and lane is populated', () => {
   LANES.forEach((_, i) => assert.ok(SKILLS.some((s) => s.lane === i), `lane ${i}`));
   assert.ok(SKILLS.length >= 50);
 });
+
+test('PEP grade placement keeps fractions out of grade 2', () => {
+  const grade2 = SKILLS.filter((s) => s.grade === 2);
+  assert.ok(grade2.every((s) => !/分数/.test(s.name) && !['frac', 'fracOf'].includes(s.gen[0])));
+  assert.ok(SKILLS.some((s) => s.grade === 3 && s.id === 'g3-fracof'));
+  assert.ok(SKILLS.some((s) => s.grade === 5 && s.id === 'g5-letter'));
+  assert.ok(SKILLS.some((s) => s.grade === 6 && s.id === 'g6-percentapp'));
+});

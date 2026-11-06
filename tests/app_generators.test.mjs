@@ -48,13 +48,13 @@ function checkAnswer(p) {
     assert.equal(Number(q), Math.floor(p.a / p.b), p.text);
     assert.equal(p.rem, p.a % p.b, p.text);
   } else {
-    const expect = p.answer.replace(/ あまり /, '').replace(/と/, '').replace('.', '');
+    const expect = p.answer.replace(/ 余数 /, '').replace(/又/, '').replace('.', '');
     // Fractions are typed denominator first.
-    const fr = p.answer.match(/^(?:(\d+)と)?(\d+)\/(\d+)$/);
+    const fr = p.answer.match(/^(?:(\d+)又)?(\d+)\/(\d+)$/);
     const want = fr ? `${fr[1] || ''}${fr[3]}${fr[2]}` : expect;
     assert.equal(typed, want, `${p.skill} ${p.text} -> ${p.answer}`);
     const v = evalText(p.text);
-    if (v !== null && !p.answer.includes('あまり')) assert.ok(Math.abs(v - num(p.answer)) < 1e-9, `${p.skill} ${p.text} = ${p.answer}`);
+    if (v !== null && !p.answer.includes('余数')) assert.ok(Math.abs(v - num(p.answer)) < 1e-9, `${p.skill} ${p.text} = ${p.answer}`);
   }
 }
 
@@ -81,7 +81,33 @@ test('recent signatures are avoided', () => {
       if (recent.has(signature(p)) && firstRepeat === Infinity) firstRepeat = i;
       recent.add(signature(p));
     }
-    const need = s.id === 'g1-compose10' ? 8 : 15;
+    const need = { 'g1-compose5': 4, 'g1-add5': 8, 'g1-sub5': 8, 'g1-compose10': 8 }[s.id] || 15;
     assert.ok(firstRepeat >= need, `${s.id} repeated at ${firstRepeat}`);
+  }
+});
+
+test('visible math wording follows mainland PEP textbook usage', () => {
+  const rng = makeRng(20261106);
+  const round = makeProblem('g4-round', rng);
+  assert.equal(round.title, '求近似数');
+  assert.match(round.text, /精确到(十|百|千)位/);
+  assert.match(round.steps[0].help.text, /四舍五入/);
+
+  const gcd = makeProblem('g5-gcd', rng);
+  assert.equal(gcd.title, '最大公因数');
+
+  const percent = makeProblem('g6-percent', rng);
+  assert.equal(percent.title, '百分数');
+
+  const proportion = makeProblem('g6-proportion', rng);
+  assert.equal(proportion.title, '解比例');
+  assert.match(proportion.steps[0].help.text, /内项之积等于外项之积/);
+
+  const forbidden = /概数|最大公约数|百分率|计算规则|几个和几个/;
+  for (const skill of SKILLS) {
+    for (let i = 0; i < 20; i++) {
+      const problem = makeProblem(skill.id, rng);
+      assert.doesNotMatch(JSON.stringify(problem), forbidden, `${skill.id} contains non-PEP wording`);
+    }
   }
 });
